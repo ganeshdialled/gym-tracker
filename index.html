@@ -124,6 +124,62 @@ function isHit(ex){var c=ex.current||{},t=ex.target||{};if(c.kg==null||c.sets==n
   return (t.kg==null||c.kg>=t.kg-1e-6)&&(t.sets==null||c.sets>=t.sets)&&(t.reps==null||c.reps>=t.reps);}
 function toast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove("show");},2200);}
 
+/* ---------- Google Sheet sync ---------- */
+var SKEY="ganeshGymTracker.sync", OKEY="ganeshGymTracker.outbox", syncBusy=false;
+function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function syncCfg(){return lsGet(SKEY,{url:"",token:"",enabled:false});}
+function outbox(){return lsGet(OKEY,[]);}
+function setOutbox(o){lsSet(OKEY,o);}
+function dayType(sec){var n=sec.name||"";if(sec.id==="ab"||/apollo bay/i.test(n))return "Apollo Bay";if(/^upper/i.test(n))return "Upper";if(/^lower/i.test(n))return "Lower";return n||"Other";}
+function rowFor(sec,ex,h){return {id:h.id,date:h.date,dayType:dayType(sec),exercise:ex.name,weightKg:h.weight_kg,sets:h.sets,reps:h.reps,
+  setDetail:h.sets+"×"+h.reps+" @ "+trim0(h.weight_kg),completed:!!h.completed,note:h.note||"",
+  nextTarget:h.next_target_kg!=null?((ex.target&&ex.target.sets)||h.sets)+"×"+((ex.target&&ex.target.reps)||h.reps)+" @ "+trim0(h.next_target_kg):""};}
+function enqueue(rows){var o=outbox(),have={};o.forEach(function(r){have[r.id]=1;});rows.forEach(function(r){if(!have[r.id]){o.push(r);have[r.id]=1;}});setOutbox(o);}
+function appRows(){var out=[];state.sections.forEach(function(sec){sec.exercises.forEach(function(ex){(ex.history||[]).forEach(function(h){if(h.id&&/^app-/.test(h.id))out.push(rowFor(sec,ex,h));});});});return out;}
+function postJSON(url,obj){return fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(obj),redirect:"follow"})
+  .then(function(r){return r.text().then(function(t){var j;try{j=JSON.parse(t);}catch(e){throw new Error("HTTP "+r.status+": not JSON (check the URL ends in /exec and access is 'Anyone')");}return j;});});}
+function flush(opts){
+  opts=opts||{};var cfg=syncCfg(),o=outbox();
+  if(!cfg.enabled||!cfg.url){if(opts.manual)toast(cfg.url?"Sync is off":"Set up Google Sheet sync first");return Promise.resolve(false);}
+  if(!o.length){if(opts.manual)toast("Nothing waiting to sync");return Promise.resolve(true);}
+  if(syncBusy)return Promise.resolve(false);syncBusy=true;
+  var batch=o.slice(0,200);
+  return postJSON(cfg.url,{token:cfg.token,rows:batch}).then(function(j){
+    if(!j||!j.ok)throw new Error((j&&j.error)||"server said no");
+    var sent={};batch.forEach(function(r){sent[r.id]=1;});setOutbox(outbox().filter(function(r){return !sent[r.id];}));
+    toast("Synced "+j.appended+" to Google Sheet"+(j.skipped?" ("+j.skipped+" already there)":""));syncBusy=false;renderFoot();
+    if(outbox().length)return flush();return true;
+  }).catch(function(err){syncBusy=false;renderFoot();toast("Sync failed, will retry"+(err&&err.message==="bad token"?" (wrong token)":""));console.warn("sync",err);return false;});
+}
+function migrateIds(){var n=0;state.sections.forEach(function(sec){sec.exercises.forEach(function(ex){(ex.history||[]).forEach(function(h){if(!h.id&&h.note==="logged in app"){h.id="app-"+h.date+"-"+Math.random().toString(36).slice(2,10);n++;}});});});if(n)save();}
+function syncDlg(){
+  var c=syncCfg();
+  openDlg('<h2>Google Sheet sync</h2>'+
+    '<label>Web App URL<input type="text" id="s-url" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec" value="'+esc(c.url)+'"></label>'+
+    '<label>Token<input type="text" id="s-token" autocomplete="off" autocapitalize="off" spellcheck="false" value="'+esc(c.token)+'"></label>'+
+    '<label class="check"><input type="checkbox" id="s-on"'+(c.enabled?" checked":"")+'> Send each logged session to the sheet</label>'+
+    '<div class="n" id="s-status" style="font-size:14px;color:var(--muted)">'+outbox().length+' waiting to send · stored on this device only</div>'+
+    '<div class="actions"><button class="btn" data-d="test">Test connection</button><button class="btn" data-d="now">Sync now</button></div>'+
+    '<button class="btn" data-d="all">Send all app-logged history</button>'+
+    '<div class="actions"><button class="btn" data-d="cancel">Close</button><button class="btn primary" data-d="save">Save</button></div>',
+  function(a){
+    var st=document.getElementById("s-status");
+    var cfg={url:val("s-url").trim(),token:val("s-token").trim(),enabled:document.getElementById("s-on").checked};
+    lsSet(SKEY,cfg);
+    if(a==="save"){closeDlg();renderFoot();toast(cfg.enabled?"Sheet sync on":"Sheet sync saved (off)");if(cfg.enabled)flush();}
+    if(a==="test"){if(!cfg.url){st.textContent="Paste the Web App URL first";return;}st.textContent="Testing…";
+      fetch(cfg.url,{redirect:"follow"}).then(function(r){return r.json();}).then(function(g){if(!g.ok)throw new Error("unexpected reply");
+        return postJSON(cfg.url,{token:cfg.token,rows:[]}).then(function(p){st.textContent=p.ok?"✅ Connected. Log tab has "+g.rows+" rows, token OK.":"⚠️ Reached the sheet ("+g.rows+" rows) but the token was rejected: "+(p.error||"");});
+      }).catch(function(e){st.textContent="❌ Couldn't connect: "+e.message;});}
+    if(a==="now"){flush({manual:true}).then(function(){st.textContent=outbox().length+" waiting to send";});}
+    if(a==="all"){var rows=appRows();if(!rows.length){st.textContent="No sessions logged in the app yet. Seed history is already in the sheet.";return;}
+      enqueue(rows);st.textContent="Queued "+rows.length+" app-logged entries…";flush({manual:true}).then(function(){st.textContent=outbox().length+" waiting to send";});}
+  });
+}
+function renderFoot(){var el=document.getElementById("syncfoot");if(!el)return;var c=syncCfg(),n=outbox().length;
+  el.textContent=c.enabled&&c.url?("Google Sheet sync on"+(n?" · "+n+" waiting":" · up to date")):"";}
+
 /* ---------- render ---------- */
 function render(){
   document.getElementById("u-kg").classList.toggle("on",U()==="kg");
@@ -143,8 +199,8 @@ function render(){
     }
     h+='</section>';
   });
-  h+='<div class="foot">Edited rows (blue edge) are what “Log session” saves. Saved on this device. Use ⋯ → Export to move data to another phone or computer.</div>';
-  document.getElementById("app").innerHTML=h;
+  h+='<div class="foot" id="syncfoot"></div><div class="foot">Edited rows (blue edge) are what “Log session” saves. Saved on this device. Use ⋯ → Export to move data to another phone or computer.</div>';
+  document.getElementById("app").innerHTML=h;renderFoot();
 }
 function card(ex){
   var c=ex.current||{},t=ex.target||{},p=peak(ex),last=(ex.history||[]).slice(-1)[0];
@@ -218,15 +274,17 @@ function addDlg(secId){
 }
 function menuDlg(){
   openDlg('<h2>Data</h2>'+
+    '<button class="btn" data-d="sync">🔄 Google Sheet sync</button>'+
     '<button class="btn" data-d="export">⬇︎ Export JSON</button>'+
     '<button class="btn" data-d="import">⬆︎ Import JSON</button>'+
     '<button class="btn" data-d="undo"'+(undoSnap?'':' disabled')+'>↶ Undo last log / delete</button>'+
     '<button class="btn danger" data-d="reset">Reset to original seed data</button>'+
     '<button class="btn" data-d="cancel">Close</button>',
   function(a){
+    if(a==="sync"){syncDlg();}
     if(a==="export"){exportJSON();closeDlg();}
     if(a==="import"){closeDlg();document.getElementById("importFile").click();}
-    if(a==="undo"&&undoSnap){state=undoSnap;undoSnap=null;save();closeDlg();render();toast("Undone");}
+    if(a==="undo"&&undoSnap){state=undoSnap;undoSnap=null;save();var keep={};appRows().forEach(function(r){keep[r.id]=1;});setOutbox(outbox().filter(function(r){return keep[r.id];}));closeDlg();render();toast("Undone (rows already sent to the sheet stay there)");}
     if(a==="reset"&&confirm("Replace everything on this device with the original seed data? Export first if unsure.")){snapshot();state=clone(SEED);save();closeDlg();render();toast("Reset to seed");}
   });
 }
@@ -241,17 +299,19 @@ function logSection(secId){
   var dup=todo.some(function(e){return (e.history||[]).some(function(h){return h.date===d;});});
   if(!confirm("Log "+todo.length+" exercise"+(todo.length>1?"s":"")+" to "+s.name+" for "+shortDate(d)+"?"+(dup?"\n\nSome are already logged today, so this adds another entry.":""))) return;
   snapshot();
-  var hits=0;
+  var hits=0,rows=[];
   todo.forEach(function(ex){
     var c=ex.current,t=ex.target||{},hit=isHit(ex),inc=ex.compound?2.5:1.25;
     var tsets=t.sets||c.sets,treps=t.reps||c.reps,next;
     if(hit){hits++;next={kg:Math.round((c.kg+inc)*1000)/1000,sets:tsets,reps:treps,note:"auto: hit "+c.sets+"×"+c.reps+" @ "+trim0(c.kg)+" kg → +"+inc+" kg"};}
     else{var rk=t.kg!=null?t.kg:c.kg;next={kg:rk,sets:tsets,reps:treps,note:"auto: repeat "+tsets+"×"+treps+" @ "+trim0(rk)+" kg (got "+c.sets+"×"+c.reps+" @ "+trim0(c.kg)+")"};}
     ex.history=ex.history||[];
-    ex.history.push({date:d,session:s.name,weight_kg:c.kg,sets:c.sets,reps:c.reps,completed:hit,note:"logged in app",next_target_kg:next.kg,next_target_note:next.note});
-    ex.target=next;delete ex.touched;
+    var h={id:"app-"+d+"-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8),date:d,session:s.name,weight_kg:c.kg,sets:c.sets,reps:c.reps,completed:hit,note:"logged in app",next_target_kg:next.kg,next_target_note:next.note};
+    ex.history.push(h);
+    ex.target=next;delete ex.touched;rows.push(rowFor(s,ex,h));
   });
-  save();render();toast("Logged "+todo.length+" · "+hits+" hit target");
+  save();var cfg=syncCfg();if(cfg.enabled&&cfg.url)enqueue(rows);render();toast("Logged "+todo.length+" · "+hits+" hit target");
+  if(cfg.enabled&&cfg.url)setTimeout(flush,900);
 }
 
 /* ---------- import/export ---------- */
@@ -292,8 +352,9 @@ document.getElementById("app").addEventListener("change",function(e){if(e.target
 document.getElementById("app").addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.matches("input"))e.target.blur();});
 document.getElementById("app").addEventListener("focusin",function(e){if(e.target.classList.contains("num"))setTimeout(function(){try{e.target.select();}catch(_){}} ,0);});
 
-state=load();state.unit=state.unit||"kg";render();
-window.__gym={get state(){return state;}};
+state=load();state.unit=state.unit||"kg";migrateIds();render();
+setTimeout(flush,1500);window.addEventListener("online",function(){flush();});
+window.__gym={get state(){return state;},flush:flush,outbox:outbox};
 })();
 </script>
 </body>
