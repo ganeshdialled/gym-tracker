@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1115" media="(prefers-color-scheme: dark)">
+<title>Gym Tracker</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--text:#14161a;--muted:#6b7280;--line:#e3e5ea;--accent:#2563eb;--accent-ink:#fff;--good:#16a34a;--warn-bg:#fff4e5;--warn:#9a5b00;--field:#f1f3f6;--danger:#dc2626;--shadow:0 1px 2px rgba(0,0,0,.06)}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#181b21;--text:#eef0f3;--muted:#9aa3af;--line:#2a2f38;--accent:#4f8cff;--accent-ink:#fff;--good:#34d399;--warn-bg:#2b2112;--warn:#f5b759;--field:#22262e;--danger:#f87171;--shadow:none}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.35 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body{padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(24px + env(safe-area-inset-bottom)) env(safe-area-inset-left)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+.wrap{max-width:720px;margin:0 auto;padding:0 12px}
+header.top{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;align-items:center;gap:8px;padding:10px 12px;max-width:720px;margin:0 auto}
+header.top h1{font-size:20px;margin:0;flex:1;letter-spacing:-.01em}
+.seg{display:inline-flex;background:var(--field);border-radius:12px;padding:3px}
+.seg button{border:0;background:transparent;min-width:52px;min-height:40px;border-radius:9px;font-weight:600;color:var(--muted)}
+.seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.iconbtn{border:0;background:var(--field);min-width:44px;min-height:44px;border-radius:12px;font-size:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+section.sec{margin:10px 0 18px}
+.sechead{width:100%;display:flex;align-items:center;gap:10px;border:0;background:transparent;padding:12px 4px;text-align:left;min-height:48px}
+.sechead .chev{transition:transform .15s;color:var(--muted);font-size:14px;width:16px}
+.sec.collapsed .chev{transform:rotate(-90deg)}
+.sechead .title{font-size:19px;font-weight:700;flex:1}
+.sechead .count{color:var(--muted);font-size:14px}
+.banner{background:var(--warn-bg);color:var(--warn);border-radius:12px;padding:10px 12px;font-size:14px;font-weight:600;margin:0 0 10px}
+.colhead{display:grid;grid-template-columns:1.25fr .8fr .8fr 1.45fr;gap:6px;padding:0 10px 6px;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+.card{background:var(--card);border-radius:16px;padding:10px;margin-bottom:10px;box-shadow:var(--shadow);border:1px solid var(--line)}
+.namerow{display:flex;align-items:flex-start;gap:6px}
+.namecol{flex:1;min-width:0}
+.name{width:100%;border:1px solid transparent;background:transparent;font-weight:650;font-size:17px;padding:6px 6px;border-radius:8px;min-height:40px;text-overflow:ellipsis}
+.name:focus{outline:none;border-color:var(--accent);background:var(--field)}
+.peak{font-size:12.5px;color:var(--muted);padding:0 7px 6px}
+.peak b{color:var(--text);font-weight:650}
+.more{border:0;background:transparent;min-width:44px;min-height:44px;border-radius:10px;font-size:22px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1.25fr .8fr .8fr 1.45fr;gap:6px;align-items:stretch}
+.num{width:100%;min-height:48px;border:1px solid var(--line);background:var(--field);border-radius:12px;text-align:center;font-size:18px;font-weight:600;padding:0 4px;-moz-appearance:textfield}
+.num::-webkit-outer-spin-button,.num::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.num:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.lbl{display:none}
+.target{min-height:48px;border:1px dashed var(--line);background:transparent;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px 4px;position:relative}
+.target .tw{font-weight:700;font-size:16px}
+.target .ts{font-size:13px;color:var(--muted)}
+.target .pen{position:absolute;top:3px;right:6px;font-size:11px;color:var(--muted)}
+.card.touched{border-left:4px solid var(--accent)}
+.card.hit .target{border-style:solid;border-color:var(--good)}
+.card.hit .target .tw::before{content:"✓ ";color:var(--good)}
+.tnote{font-size:12px;color:var(--muted);padding:6px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.secfoot{display:flex;gap:8px;margin-top:4px}
+.btn{flex:1;min-height:50px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:650;font-size:16px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--danger)}
+.foot{color:var(--muted);font-size:12.5px;text-align:center;margin:20px 0}
+dialog{border:0;border-radius:20px;padding:0;background:var(--card);color:var(--text);width:min(520px,calc(100vw - 20px));max-height:85vh}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg{padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto;max-height:85vh}
+.dlg h2{margin:0;font-size:18px}
+.dlg label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:600}
+.dlg .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.dlg input[type=text],.dlg select,.dlg textarea{min-height:46px;border:1px solid var(--line);background:var(--field);border-radius:12px;padding:8px 10px;font-size:16px;color:var(--text)}
+.dlg .actions{display:flex;gap:8px}
+.check{flex-direction:row!important;align-items:center;gap:10px!important;font-size:15px!important;color:var(--text)!important;min-height:44px}
+.check input{width:22px;height:22px}
+.hist{font-size:14px;border-top:1px solid var(--line)}
+.hist div{display:flex;gap:8px;padding:7px 0;border-bottom:1px solid var(--line)}
+.hist .d{color:var(--muted);width:66px;flex:none}
+.hist .w{font-weight:650;width:96px;flex:none}
+.hist .n{color:var(--muted);font-size:12.5px;flex:1;min-width:0}
+.hist .x{color:var(--danger)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(120px);background:var(--text);color:var(--bg);padding:12px 16px;border-radius:14px;font-weight:600;font-size:15px;transition:transform .2s;z-index:50;max-width:92vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.empty{color:var(--muted);text-align:center;padding:14px;font-size:14px}
+@media (max-width:360px){.num{font-size:16px}.target .tw{font-size:14px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>🏋️ Gym Tracker</h1>
+  <div class="seg" role="group" aria-label="Units"><button data-act="unit" data-u="kg" id="u-kg">kg</button><button data-act="unit" data-u="lb" id="u-lb">lb</button></div>
+  <button class="iconbtn" data-act="menu" aria-label="Menu">⋯</button>
+</header>
+<main class="wrap" id="app"></main>
+<div class="toast" id="toast"></div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<dialog id="dlg"><form method="dialog" class="dlg" id="dlgBody"></form></dialog>
+
+<script id="seed" type="application/json">{"version":1,"unit":"kg","seededFrom":"lifts.json","sections":[{"id":"upper","name":"Upper","collapsed":false,"banner":"","exercises":[{"id":"e1","name":"Cable chest press","notes":"cable machine","compound":true,"current":{"kg":21.75,"sets":3,"reps":10},"target":{"kg":21.75,"sets":3,"reps":10,"note":"3x10 @ 21.75, then back to 23.75x3x9"},"history":[{"date":"2026-09-21","session":"Upper","weight_kg":18.75,"sets":3,"reps":8,"completed":true,"note":"cable machine","sets_detail":[{"sets":3,"reps":8,"weight_kg":18.75,"role":"work"}]},{"date":"2026-09-23","session":"Upper","weight_kg":21.25,"sets":3,"reps":9,"completed":true,"note":"hit 21.25 target with 3×9","sets_detail":[{"sets":3,"reps":9,"weight_kg":21.25,"role":"work"}],"next_target_kg":23.75},{"date":"2026-09-27","session":"Upper (Apollo Bay)","weight_kg":23.75,"sets":3,"reps":8,"completed":true,"note":"hit target","next":"23.75 × 3×9, then 26.25"},{"date":"2026-10-05","session":"Upper","weight_kg":23.75,"sets":3,"reps":8,"completed":false,"note":"home; target was 23.75x3x9 or 26.25x3x8. Hit weight, missed the 9th rep.","next_target_kg":23.75,"next_target_note":"repeat 3x9 @ 23.75 (got 3x8)"},{"date":"2026-10-07","session":"Upper","weight_kg":21.75,"sets":3,"reps":10,"completed":false,"note":"dropped from 23.75 target; 2x10 then 1x6 @ 21.75 (knee week).","sets_detail":[{"sets":2,"reps":10,"weight_kg":21.75,"role":"work"},{"sets":1,"reps":6,"weight_kg":21.75,"role":"work"}],"next_target_kg":21.75,"next_target_note":"3x10 @ 21.75, then back to 23.75x3x9"}]},{"id":"e2","name":"Cable row","notes":"dual D-handle seated","compound":true,"current":{"kg":95,"sets":3,"reps":8},"target":{"kg":97.5,"sets":3,"reps":8,"note":"3x8 @ 97.5 (hit 3x8 @ 95)"},"history":[{"date":"2026-09-21","session":"Upper","weight_kg":90,"sets":2,"reps":8,"completed":true,"note":"dual D-handle seated cable row; warmup 1×8@50 then 2×8@90","sets_detail":[{"sets":1,"reps":8,"weight_kg":50,"role":"warmup"},{"sets":2,"reps":8,"weight_kg":90,"role":"work"}]},{"date":"2026-09-23","session":"Upper","weight_kg":90.5,"sets":2,"reps":5,"completed":false,"note":"warmup 3×8@50; work 2×5@90.5 (target was 92.5×8 — failed reps)","sets_detail":[{"sets":3,"reps":8,"weight_kg":50,"role":"warmup"},{"sets":2,"reps":5,"weight_kg":90.5,"role":"work"}],"next_target_kg":90.5,"next_target_note":"repeat 2×8 @ 90.5 (did not hit prescribed reps)"},{"date":"2026-10-05","session":"Upper","weight_kg":92.5,"sets":3,"reps":8,"completed":true,"note":"seated cable row; home kit after Apollo Bay. Hit above the 90.5x2x8 repeat.","next_target_kg":95,"next_target_note":"3x8 @ 95 (hit 3x8 @ 92.5)"},{"date":"2026-10-07","session":"Upper","weight_kg":95,"sets":3,"reps":8,"completed":true,"note":"seated cable row; knee week, upper only. Hit 3x8 @ 95 target.","next_target_kg":97.5,"next_target_note":"3x8 @ 97.5 (hit 3x8 @ 95)"}]},{"id":"e3","name":"Single-arm cable row","notes":"per arm; AB substitute for dual D-handle row","compound":true,"current":{"kg":35,"sets":3,"reps":8},"target":{"kg":37.5,"sets":3,"reps":8,"note":"37.5 × 3×8"},"history":[{"date":"2026-09-27","session":"Upper (Apollo Bay)","weight_kg":35,"sets":3,"reps":8,"completed":true,"note":"per arm; AB substitute for dual D-handle row","next":"37.5 × 3×8"}]},{"id":"e4","name":"Plate-loaded lat pulldown","notes":"iso-lateral / wide grip","compound":true,"current":{"kg":110,"sets":3,"reps":8},"target":{"kg":112.5,"sets":3,"reps":8,"note":"3x8 @ 112.5 (hit 3x8 @ 110)"},"history":[{"date":"2026-09-21","session":"Upper","weight_kg":80,"sets":3,"reps":8,"completed":true,"note":"plate-loaded iso-lateral lat pulldown, wide grip; warmup 1×8@60 then 3×8@80","sets_detail":[{"sets":1,"reps":8,"weight_kg":60,"role":"warmup"},{"sets":3,"reps":8,"weight_kg":80,"role":"work"}]},{"date":"2026-09-23","session":"Upper","weight_kg":90,"sets":3,"reps":8,"completed":true,"note":"plate-loaded lat pulldown; hit 90 vs target 82.5","sets_detail":[{"sets":3,"reps":8,"weight_kg":90,"role":"work"}],"next_target_kg":92.5},{"date":"2026-09-27","session":"Upper (Apollo Bay)","weight_kg":100,"sets":3,"reps":8,"completed":true,"note":"AB machine; big jump from 70 on 24 Sep (different machine or plate count?)","next":"102.5 × 3×8"},{"date":"2026-10-05","session":"Upper","weight_kg":100,"sets":3,"reps":8,"completed":true,"note":"home plate-loaded lat pulldown; target was 92.5x3x8","next_target_kg":102.5,"next_target_note":"3x8 @ 102.5 (hit 3x8 @ 100)"},{"date":"2026-10-07","session":"Upper","weight_kg":110,"sets":3,"reps":8,"completed":true,"note":"beat 102.5 target; hit 3x8 @ 110 (knee week, upper only).","next_target_kg":112.5,"next_target_note":"3x8 @ 112.5 (hit 3x8 @ 110)"}]},{"id":"e5","name":"Straight-arm lat pulldown","notes":"cable straight-arm pulldown","compound":true,"current":{"kg":35,"sets":3,"reps":8},"target":{"kg":36.25,"sets":3,"reps":8,"note":"3x8 @ 36.25 (hit 3x8 @ 35)"},"history":[{"date":"2026-09-21","session":"Upper","weight_kg":25,"sets":3,"reps":8,"completed":true,"note":"cable straight-arm pulldown","sets_detail":[{"sets":3,"reps":8,"weight_kg":25,"role":"work"}]},{"date":"2026-09-23","session":"Upper","weight_kg":28.75,"sets":3,"reps":8,"completed":true,"note":"above 26–27 target","sets_detail":[{"sets":3,"reps":8,"weight_kg":28.75,"role":"work"}],"next_target_kg":30},{"date":"2026-09-27","session":"Upper (Apollo Bay)","weight_kg":30,"sets":3,"reps":8,"completed":true,"note":"hit target","next":"30 × 3×9, then 31.25"},{"date":"2026-10-05","session":"Upper","weight_kg":32.5,"sets":3,"reps":8,"completed":true,"note":"home straight-arm; target was 30x3x9 or 31.25x3x8","next_target_kg":33.75,"next_target_note":"3x8 @ 33.75 (hit 3x8 @ 32.5)"},{"date":"2026-10-07","session":"Upper","weight_kg":35,"sets":3,"reps":8,"completed":true,"note":"beat 33.75 target; hit 3x8 @ 35 (knee week).","next_target_kg":36.25,"next_target_note":"3x8 @ 36.25 (hit 3x8 @ 35)"}]},{"id":"e6","name":"Standing barbell curl","notes":"fixed EZ-bar 25kg","compound":false,"current":{"kg":25,"sets":3,"reps":12},"target":{"kg":27.5,"sets":3,"reps":8,"note":"3x8 @ 27.5 (hit 3x12 @ 25)"},"history":[{"date":"2026-09-21","session":"Upper","weight_kg":25,"sets":3,"reps":8,"completed":true,"note":"fixed EZ-bar 25kg (Snap)","sets_detail":[{"sets":3,"reps":8,"weight_kg":25,"role":"work"}]},{"date":"2026-09-23","session":"Upper","weight_kg":25,"sets":3,"reps":9,"completed":true,"note":"fixed EZ-bar 25kg; hit 3×9 (target was add reps)","sets_detail":[{"sets":3,"reps":9,"weight_kg":25,"role":"work"}],"next_target_kg":25,"next_target_note":"3×10 @ 25 or next fixed bar"},{"date":"2026-09-27","session":"Upper (Apollo Bay)","weight_kg":25,"sets":3,"reps":10,"completed":true,"note":"hit target","next":"27.5 × 3×8 (or 25 × 3×12 if fixed bar)"},{"date":"2026-10-05","session":"Upper","weight_kg":25,"sets":3,"reps":12,"completed":true,"note":"barbell curl; hit the 25kg x 3x12 option","next_target_kg":27.5,"next_target_note":"3x8 @ 27.5 (hit 3x12 @ 25)"}]},{"id":"e7","name":"Standing dumbbell curl","notes":"15 kg dumbbells (per hand), swapped in for the barbell curl.","compound":false,"current":{"kg":15,"sets":3,"reps":8},"target":{"kg":15,"sets":3,"reps":10,"note":"3x10 @ 15 kg each, then move to 17.5 kg"},"history":[{"date":"2026-09-26","session":"Apollo Bay","weight_kg":16,"sets":3,"reps":8,"completed":true,"note":"per dumbbell","next":"16 × 3×10"},{"date":"2026-10-07","session":"Upper","weight_kg":15,"sets":3,"reps":8,"completed":true,"note":"15 kg dumbbells (per hand), swapped in for the barbell curl.","next_target_kg":15,"next_target_note":"3x10 @ 15 kg each, then move to 17.5 kg"}]},{"id":"e8","name":"Straight-bar tricep pushdown","notes":"straight bar attachment","compound":false,"current":{"kg":32,"sets":3,"reps":8},"target":{"kg":33.75,"sets":3,"reps":8,"note":"3x8 @ 33.75 (hit 3x8 @ 32)"},"history":[{"date":"2026-09-21","session":"Upper","weight_kg":25,"sets":3,"reps":8,"completed":true,"note":"straight bar attachment","sets_detail":[{"sets":3,"reps":8,"weight_kg":25,"role":"work"}]},{"date":"2026-09-23","session":"Upper","weight_kg":26.25,"sets":3,"reps":8,"completed":true,"note":"straight bar; hit 26–27 target band","sets_detail":[{"sets":3,"reps":8,"weight_kg":26.25,"role":"work"}],"next_target_kg":27.5},{"date":"2026-10-05","session":"Upper","weight_kg":32,"sets":3,"reps":8,"completed":true,"note":"home straight-bar pushdown; target was 27.5x3x8","next_target_kg":33.75,"next_target_note":"3x8 @ 33.75 (hit 3x8 @ 32)"}]},{"id":"e9","name":"Rope tricep pushdown","notes":"home rope; 2x8 @ 39 then 1x8 @ 25 (dropped on 3rd set). Swap","compound":false,"current":{"kg":39,"sets":3,"reps":8},"target":{"kg":39,"sets":3,"reps":8,"note":"3x8 @ 39 (got 2 of 3 sets at 39)"},"history":[{"date":"2026-09-27","session":"Upper (Apollo Bay)","weight_kg":25,"sets":3,"reps":8,"completed":true,"note":"rope, not straight bar","next":"26.25 × 3×8"},{"date":"2026-10-07","session":"Upper","weight_kg":39,"sets":3,"reps":8,"completed":false,"note":"home rope; 2x8 @ 39 then 1x8 @ 25 (dropped on 3rd set). Swapped from straight-bar today.","sets_detail":[{"sets":2,"reps":8,"weight_kg":39,"role":"work"},{"sets":1,"reps":8,"weight_kg":25,"role":"work"}],"next_target_kg":39,"next_target_note":"3x8 @ 39 (got 2 of 3 sets at 39)"}]},{"id":"e10","name":"Rear delt fly","notes":"pec deck / rear delt machine","compound":false,"current":{"kg":68,"sets":3,"reps":8},"target":{"kg":68,"sets":3,"reps":8,"note":"3x8 @ 68 (got 2 of 3 sets at 68)"},"history":[{"date":"2026-09-21","session":"Upper","weight_kg":54,"sets":3,"reps":8,"completed":true,"note":"pec deck / rear delt machine","sets_detail":[{"sets":3,"reps":8,"weight_kg":54,"role":"work"}]},{"date":"2026-09-23","session":"Upper","weight_kg":61,"sets":3,"reps":8,"completed":true,"note":"above 55–56 target","sets_detail":[{"sets":3,"reps":8,"weight_kg":61,"role":"work"}],"next_target_kg":62.5},{"date":"2026-09-27","session":"Upper (Apollo Bay)","weight_kg":61,"sets":3,"reps":8,"completed":true,"note":"held weight","next":"62.5 × 3×8"},{"date":"2026-10-05","session":"Upper","weight_kg":62,"sets":3,"reps":8,"completed":false,"note":"home rear delt; target was 62.5x3x8, landed 62","next_target_kg":62.5,"next_target_note":"repeat 3x8 @ 62.5 (got 3x8 @ 62)"},{"date":"2026-10-07","session":"Upper","weight_kg":68,"sets":3,"reps":8,"completed":false,"note":"1x8 @ 61 then 2x8 @ 68 (target was 62.5x3x8).","sets_detail":[{"sets":1,"reps":8,"weight_kg":61,"role":"work"},{"sets":2,"reps":8,"weight_kg":68,"role":"work"}],"next_target_kg":68,"next_target_note":"3x8 @ 68 (got 2 of 3 sets at 68)"}]},{"id":"e11","name":"Machine dip","notes":"machine","compound":false,"current":{"kg":80,"sets":3,"reps":8},"target":{"kg":82.5,"sets":3,"reps":8,"note":"82.5 × 3×8"},"history":[{"date":"2026-09-27","session":"Upper (Apollo Bay)","weight_kg":80,"sets":3,"reps":8,"completed":true,"note":"machine","next":"82.5 × 3×8"}]}]},{"id":"lower","name":"Lower","collapsed":false,"banner":"Knee: no knee-loading Lower until cleared after MRI","exercises":[{"id":"e12","name":"45° leg press","notes":"45-degree sled","compound":true,"current":{"kg":210,"sets":3,"reps":8},"target":{"kg":212.5,"sets":3,"reps":8,"note":""},"history":[{"date":"2026-09-22","session":"Lower","weight_kg":210,"sets":3,"reps":8,"completed":true,"note":"45-degree leg press","sets_detail":[{"sets":3,"reps":8,"weight_kg":210,"role":"work"}],"next_target_kg":212.5}]},{"id":"e13","name":"Hammer Strength glute drive","notes":"plate-loaded glute drive","compound":true,"current":{"kg":100,"sets":3,"reps":8},"target":{"kg":102.5,"sets":3,"reps":8,"note":""},"history":[{"date":"2026-09-22","session":"Lower","weight_kg":100,"sets":3,"reps":8,"completed":true,"note":"Hammer Strength plate-loaded glute drive","sets_detail":[{"sets":3,"reps":8,"weight_kg":100,"role":"work"}],"next_target_kg":102.5}]},{"id":"e14","name":"Hip extension","notes":"skipped 2026-09-22 (time); establish next Lower","compound":false,"current":{"kg":null,"sets":3,"reps":8},"target":{"kg":null,"sets":3,"reps":8,"note":""},"history":[]},{"id":"e15","name":"Leg extension","notes":"machine","compound":false,"current":{"kg":96,"sets":3,"reps":8},"target":{"kg":98,"sets":3,"reps":8,"note":""},"history":[{"date":"2026-09-22","session":"Lower","weight_kg":96,"sets":3,"reps":8,"completed":true,"note":"leg extension machine","sets_detail":[{"sets":3,"reps":8,"weight_kg":96,"role":"work"}],"next_target_kg":98}]},{"id":"e16","name":"Leg curl","notes":"machine","compound":false,"current":{"kg":61,"sets":3,"reps":8},"target":{"kg":62.5,"sets":3,"reps":8,"note":""},"history":[{"date":"2026-09-22","session":"Lower","weight_kg":61,"sets":3,"reps":8,"completed":true,"note":"leg curl machine","sets_detail":[{"sets":3,"reps":8,"weight_kg":61,"role":"work"}],"next_target_kg":62.5}]},{"id":"e17","name":"Standing calf raise","notes":"standing machine","compound":false,"current":{"kg":75,"sets":3,"reps":8},"target":{"kg":77.5,"sets":3,"reps":8,"note":""},"history":[{"date":"2026-09-22","session":"Lower","weight_kg":75,"sets":3,"reps":8,"completed":true,"note":"standing calf raise machine","sets_detail":[{"sets":3,"reps":8,"weight_kg":75,"role":"work"}],"next_target_kg":77.5}]}]},{"id":"ab","name":"Apollo Bay / Other","collapsed":true,"banner":"","exercises":[{"id":"e18","name":"Trap bar deadlift","notes":"plates; AB only","compound":true,"current":{"kg":80,"sets":3,"reps":5},"target":{"kg":82.5,"sets":3,"reps":5,"note":"82.5 kg x 3x5"},"history":[{"date":"2026-09-24","session":"Apollo Bay gym","weight_kg":80,"sets":5,"reps":3,"completed":true,"note":"trap bar; 80 kg plates as stated (Apollo Bay; no Eclipse ride)","next":"82.5 kg × 5×3"},{"date":"2026-09-28","session":"Apollo Bay gym","weight_kg":80,"sets":3,"reps":5,"completed":true,"note":"moved from 5x3 to 3x5 at 80 after Reinstein ride","next":"82.5 kg x 3x5"}]},{"id":"e19","name":"Barbell RDL","notes":"2×20 → step plates","compound":true,"current":{"kg":70,"sets":4,"reps":8},"target":{"kg":70.0,"sets":4,"reps":10,"note":"70 kg x 4x10, or 72.5 x 4x8"},"history":[{"date":"2026-09-24","session":"Apollo Bay gym","weight_kg":60,"sets":4,"reps":5,"completed":true,"note":"barbell RDL; 2×20 kg plates (assumed ~20 kg bar → ~60 kg total)","next":"~62.5–65 kg total (e.g. 2×22.5) × 4×5"},{"date":"2026-09-28","session":"Apollo Bay gym","weight_kg":70,"sets":4,"reps":8,"completed":true,"note":"up from ~60 x 4x5 on 24 Sep","next":"70 kg x 4x10, or 72.5 x 4x8"}]},{"id":"e20","name":"Machine leg press","notes":"not 45° sled; optional burnout","compound":true,"current":{"kg":100,"sets":2,"reps":5},"target":{"kg":100.0,"sets":3,"reps":5,"note":"100 x 3x5 or 80 x 3x8"},"history":[{"date":"2026-09-24","session":"Apollo Bay gym","weight_kg":72,"sets":4,"reps":8,"completed":true,"note":"machine leg press (not 45° sled); Apollo Bay — home last 210 kg on 45°; track AB separately","sets_detail":[{"sets":3,"reps":8,"weight_kg":72,"role":"work"},{"sets":1,"reps":15,"weight_kg":72,"role":"burnout"}],"next":"75 kg × 3×8 (Apollo Bay machine); optional burnout"},{"date":"2026-09-28","session":"Apollo Bay gym","weight_kg":100,"sets":2,"reps":5,"completed":true,"note":"heavy day after trap bar + RDL; prev 3x8 @72 +1x15","next":"100 x 3x5 or 80 x 3x8"}]},{"id":"e21","name":"Leg extension","notes":"AB stack","compound":false,"current":{"kg":70,"sets":3,"reps":8},"target":{"kg":72.5,"sets":3,"reps":8,"note":"72.5 kg × 3×8 (Apollo Bay)"},"history":[{"date":"2026-09-24","session":"Apollo Bay gym","weight_kg":70,"sets":3,"reps":8,"completed":true,"note":"Apollo Bay machine (home last was 96 kg @ 2026-09-22 — different stack/machine; track AB separately)","next":"72.5 kg × 3×8 (Apollo Bay)"}]},{"id":"e22","name":"Lat pulldown wide grip","notes":"AB machine","compound":true,"current":{"kg":70,"sets":3,"reps":8},"target":{"kg":72.5,"sets":3,"reps":8,"note":"72.5 kg × 3×8 (Apollo Bay)"},"history":[{"date":"2026-09-24","session":"Apollo Bay gym","weight_kg":70,"sets":3,"reps":8,"completed":true,"note":"wide grip; Apollo Bay machine (home plate-loaded last 90 kg — track AB separately)","next":"72.5 kg × 3×8 (Apollo Bay)"}]},{"id":"e23","name":"Kettlebell swing","notes":"16 kg → reps or 20 kg","compound":false,"current":{"kg":16,"sets":3,"reps":20},"target":{"kg":16.0,"sets":3,"reps":22,"note":"16 kg × 3×22 (or 20 kg × 3×15 if stepping up)"},"history":[{"date":"2026-09-24","session":"Apollo Bay gym","weight_kg":16,"sets":3,"reps":20,"completed":true,"note":"kettlebell swing; Apollo Bay","next":"16 kg × 3×22 (or 20 kg × 3×15 if stepping up)"}]}]}]}</script>
+<script>
+(function(){
+"use strict";
+var KEY="ganeshGymTracker.v1", KG2LB=2.20462;
+var SEED=JSON.parse(document.getElementById("seed").textContent);
+var COMPOUND=/row|pulldown|press|glute drive|deadlift|rdl/i;
+var state, storageOK=true, undoSnap=null;
+
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function load(){
+  try{var raw=localStorage.getItem(KEY); if(raw){var s=JSON.parse(raw); if(valid(s)) return s;}}catch(e){storageOK=false;}
+  return clone(SEED);
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));storageOK=true;}catch(e){storageOK=false;}}
+function valid(s){return s&&Array.isArray(s.sections)&&s.sections.every(function(x){return Array.isArray(x.exercises);});}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function trim0(n){return (Math.round(n*100)/100).toString();}
+function toDisp(kg){ if(kg==null||kg===""||isNaN(kg)) return ""; return state.unit==="lb"? trim0(Math.round(kg*KG2LB*2)/2) : trim0(kg); }
+function fromDisp(v){ v=String(v).replace(",","."); if(v.trim()==="") return null; var n=parseFloat(v); if(isNaN(n)) return null; return state.unit==="lb"? Math.round(n/KG2LB*1000)/1000 : n; }
+function intOrNull(v){var n=parseInt(v,10);return isNaN(n)?null:n;}
+function U(){return state.unit;}
+function today(){var d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function shortDate(iso){var p=(iso||"").split("-");if(p.length<3)return iso||"";var m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][+p[1]-1];return (+p[2])+" "+m;}
+function uid(){return "e"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function findEx(id){for(var i=0;i<state.sections.length;i++){var s=state.sections[i];for(var j=0;j<s.exercises.length;j++) if(s.exercises[j].id===id) return {sec:s,ex:s.exercises[j],idx:j};}return null;}
+function secById(id){return state.sections.filter(function(s){return s.id===id;})[0];}
+function peak(ex){var p=null;(ex.history||[]).forEach(function(h){var w=[h.weight_kg];(h.sets_detail||[]).forEach(function(d){if(d.role!=="warmup")w.push(d.weight_kg);});w.forEach(function(x){if(typeof x==="number"&&(p==null||x>p))p=x;});});return p;}
+function isHit(ex){var c=ex.current||{},t=ex.target||{};if(c.kg==null||c.sets==null||c.reps==null)return false;
+  return (t.kg==null||c.kg>=t.kg-1e-6)&&(t.sets==null||c.sets>=t.sets)&&(t.reps==null||c.reps>=t.reps);}
+function toast(msg){var t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove("show");},2200);}
+
+/* ---------- render ---------- */
+function render(){
+  document.getElementById("u-kg").classList.toggle("on",U()==="kg");
+  document.getElementById("u-lb").classList.toggle("on",U()==="lb");
+  var h="";
+  if(!storageOK) h+='<div class="banner">Storage unavailable in this browser mode, so changes won\'t survive a reload. Use Export to save.</div>';
+  state.sections.forEach(function(s){
+    h+='<section class="sec'+(s.collapsed?" collapsed":"")+'" data-sec="'+esc(s.id)+'">';
+    h+='<button class="sechead" data-act="toggle" data-sec="'+esc(s.id)+'"><span class="chev">▼</span><span class="title">'+esc(s.name)+'</span><span class="count">'+s.exercises.length+' exercises</span></button>';
+    if(!s.collapsed){
+      if(s.banner) h+='<div class="banner">⚠️ '+esc(s.banner)+'</div>';
+      if(s.exercises.length){
+        h+='<div class="colhead"><span>Weight ('+U()+')</span><span>Sets</span><span>Reps</span><span>Target</span></div>';
+        s.exercises.forEach(function(ex){h+=card(ex);});
+      } else h+='<div class="empty">No exercises yet.</div>';
+      h+='<div class="secfoot"><button class="btn" data-act="add" data-sec="'+esc(s.id)+'">＋ Add exercise</button><button class="btn primary" data-act="log" data-sec="'+esc(s.id)+'">Log session</button></div>';
+    }
+    h+='</section>';
+  });
+  h+='<div class="foot">Edited rows (blue edge) are what “Log session” saves. Saved on this device. Use ⋯ → Export to move data to another phone or computer.</div>';
+  document.getElementById("app").innerHTML=h;
+}
+function card(ex){
+  var c=ex.current||{},t=ex.target||{},p=peak(ex),last=(ex.history||[]).slice(-1)[0];
+  var pk = p!=null? 'Peak <b>'+toDisp(p)+' '+U()+'</b>' : 'No history yet';
+  if(last) pk+=' · last '+shortDate(last.date)+': '+last.sets+'×'+last.reps+' @ '+toDisp(last.weight_kg);
+  var tw = t.kg!=null? toDisp(t.kg)+' '+U() : '—';
+  var ts = (t.sets!=null?t.sets:'?')+'×'+(t.reps!=null?t.reps:'?');
+  return '<div class="card'+(isHit(ex)?' hit':'')+(ex.touched===today()?' touched':'')+'" data-id="'+esc(ex.id)+'">'+
+    '<div class="namerow"><div class="namecol"><input class="name" data-f="name" value="'+esc(ex.name)+'" aria-label="Exercise name" enterkeyhint="done" autocomplete="off">'+
+    '<div class="peak">'+pk+'</div></div><button class="more" data-act="exmenu" aria-label="Exercise options">⋯</button></div>'+
+    '<div class="grid">'+
+      '<input class="num" data-f="kg" inputmode="decimal" type="text" pattern="[0-9]*[.,]?[0-9]*" aria-label="Weight '+U()+'" value="'+toDisp(c.kg)+'" placeholder="–">'+
+      '<input class="num" data-f="sets" inputmode="numeric" type="text" pattern="[0-9]*" aria-label="Sets" value="'+(c.sets==null?"":c.sets)+'" placeholder="–">'+
+      '<input class="num" data-f="reps" inputmode="numeric" type="text" pattern="[0-9]*" aria-label="Reps" value="'+(c.reps==null?"":c.reps)+'" placeholder="–">'+
+      '<button class="target" data-act="target" aria-label="Edit target"><span class="pen">✎</span><span class="tw">'+esc(tw)+'</span><span class="ts">'+ts+'</span></button>'+
+    '</div>'+(t.note?'<div class="tnote" title="'+esc(t.note)+'">🎯 '+esc(t.note)+'</div>':'')+
+  '</div>';
+}
+
+/* ---------- dialogs ---------- */
+var dlg=document.getElementById("dlg"), body=document.getElementById("dlgBody"), onDlg=null;
+function openDlg(html,handler){body.innerHTML=html;onDlg=handler;if(dlg.showModal)dlg.showModal();else dlg.setAttribute("open","");}
+function closeDlg(){if(dlg.close)dlg.close();else dlg.removeAttribute("open");onDlg=null;}
+body.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;e.preventDefault();var a=b.getAttribute("data-d");if(a==="cancel"){closeDlg();return;}if(onDlg)onDlg(a,b);});
+dlg.addEventListener("click",function(e){if(e.target===dlg)closeDlg();});
+
+function targetDlg(id){
+  var f=findEx(id),ex=f.ex,t=ex.target||{};
+  openDlg('<h2>Target · '+esc(ex.name)+'</h2>'+
+    '<div class="row3"><label>Weight ('+U()+')<input type="text" class="num" inputmode="decimal" id="t-kg" value="'+toDisp(t.kg)+'"></label>'+
+    '<label>Sets<input type="text" class="num" inputmode="numeric" id="t-sets" value="'+(t.sets==null?"":t.sets)+'"></label>'+
+    '<label>Reps<input type="text" class="num" inputmode="numeric" id="t-reps" value="'+(t.reps==null?"":t.reps)+'"></label></div>'+
+    '<label>Note<input type="text" id="t-note" value="'+esc(t.note||"")+'"></label>'+
+    '<div class="actions"><button class="btn" data-d="copy">Copy to today</button></div>'+
+    '<div class="actions"><button class="btn" data-d="cancel">Cancel</button><button class="btn primary" data-d="save">Save</button></div>',
+  function(a){
+    if(a==="save"){ex.target={kg:fromDisp(val("t-kg")),sets:intOrNull(val("t-sets")),reps:intOrNull(val("t-reps")),note:val("t-note").trim()};save();closeDlg();render();toast("Target saved");}
+    if(a==="copy"){ex.current={kg:ex.target.kg,sets:ex.target.sets,reps:ex.target.reps};ex.touched=today();save();closeDlg();render();toast("Target copied into today's columns");}
+  });
+}
+function val(id){return document.getElementById(id).value;}
+
+function exMenu(id){
+  var f=findEx(id),ex=f.ex;
+  var opts=state.sections.map(function(s){return '<option value="'+esc(s.id)+'"'+(s.id===f.sec.id?" selected":"")+'>'+esc(s.name)+'</option>';}).join("");
+  var hist=(ex.history||[]).slice().reverse().map(function(h,i){var ri=ex.history.length-1-i;return '<div><span class="d">'+shortDate(h.date)+'</span><span class="w">'+h.sets+'×'+h.reps+' @ '+toDisp(h.weight_kg)+'</span><span class="n">'+(h.completed===false?'✗ ':'✓ ')+esc(h.note||h.session||"")+'</span><button class="more x" data-d="delh" data-i="'+ri+'" aria-label="Delete entry">×</button></div>';}).join("");
+  openDlg('<h2>'+esc(ex.name)+'</h2>'+
+    '<label>Section<select id="m-sec">'+opts+'</select></label>'+
+    '<label class="check"><input type="checkbox" id="m-comp"'+(ex.compound?" checked":"")+'> Compound lift (+2.5 kg progression; off = +1.25 kg)</label>'+
+    '<label>Notes<input type="text" id="m-notes" value="'+esc(ex.notes||"")+'"></label>'+
+    '<div class="actions"><button class="btn" data-d="up">↑ Move up</button><button class="btn" data-d="down">↓ Move down</button></div>'+
+    '<div class="actions"><button class="btn danger" data-d="del">Delete exercise</button><button class="btn primary" data-d="save">Done</button></div>'+
+    '<h2 style="font-size:15px">History ('+(ex.history||[]).length+')</h2><div class="hist">'+(hist||'<div class="n" style="padding:8px 0">No sessions logged yet.</div>')+'</div>',
+  function(a,b){
+    var cur=findEx(id);
+    if(a==="save"){ex.compound=document.getElementById("m-comp").checked;ex.notes=val("m-notes");var to=val("m-sec");if(to!==cur.sec.id){cur.sec.exercises.splice(cur.idx,1);secById(to).exercises.push(ex);toast("Moved to "+secById(to).name);}save();closeDlg();render();}
+    if(a==="up"||a==="down"){var arr=cur.sec.exercises,j=cur.idx+(a==="up"?-1:1);if(j<0||j>=arr.length)return;arr.splice(cur.idx,1);arr.splice(j,0,ex);save();render();toast("Moved "+a);}
+    if(a==="del"){if(confirm("Delete \""+ex.name+"\" and its history?")){snapshot();cur.sec.exercises.splice(cur.idx,1);save();closeDlg();render();toast("Deleted. ⋯ menu → Undo to restore");}}
+    if(a==="delh"){var i=+b.getAttribute("data-i");if(confirm("Delete the "+shortDate(ex.history[i].date)+" entry?")){snapshot();ex.history.splice(i,1);save();render();exMenu(id);}}
+  });
+}
+function addDlg(secId){
+  openDlg('<h2>Add exercise</h2><label>Name<input type="text" id="a-name" placeholder="e.g. Incline press"></label>'+
+    '<div class="row3"><label>Weight ('+U()+')<input type="text" class="num" inputmode="decimal" id="a-kg"></label><label>Sets<input type="text" class="num" inputmode="numeric" id="a-sets" value="3"></label><label>Reps<input type="text" class="num" inputmode="numeric" id="a-reps" value="8"></label></div>'+
+    '<div class="actions"><button class="btn" data-d="cancel">Cancel</button><button class="btn primary" data-d="add">Add</button></div>',
+  function(a){if(a!=="add")return;var n=val("a-name").trim();if(!n){document.getElementById("a-name").focus();return;}
+    var kg=fromDisp(val("a-kg")),s=intOrNull(val("a-sets")),r=intOrNull(val("a-reps"));
+    secById(secId).exercises.push({id:uid(),name:n,notes:"",compound:COMPOUND.test(n),current:{kg:kg,sets:s,reps:r},target:{kg:kg,sets:s,reps:r,note:""},history:[]});
+    save();closeDlg();render();toast("Added "+n);});
+  setTimeout(function(){var i=document.getElementById("a-name");i&&i.focus();},50);
+}
+function menuDlg(){
+  openDlg('<h2>Data</h2>'+
+    '<button class="btn" data-d="export">⬇︎ Export JSON</button>'+
+    '<button class="btn" data-d="import">⬆︎ Import JSON</button>'+
+    '<button class="btn" data-d="undo"'+(undoSnap?'':' disabled')+'>↶ Undo last log / delete</button>'+
+    '<button class="btn danger" data-d="reset">Reset to original seed data</button>'+
+    '<button class="btn" data-d="cancel">Close</button>',
+  function(a){
+    if(a==="export"){exportJSON();closeDlg();}
+    if(a==="import"){closeDlg();document.getElementById("importFile").click();}
+    if(a==="undo"&&undoSnap){state=undoSnap;undoSnap=null;save();closeDlg();render();toast("Undone");}
+    if(a==="reset"&&confirm("Replace everything on this device with the original seed data? Export first if unsure.")){snapshot();state=clone(SEED);save();closeDlg();render();toast("Reset to seed");}
+  });
+}
+
+/* ---------- logging ---------- */
+function snapshot(){undoSnap=clone(state);}
+function logSection(secId){
+  var d=today(),s=secById(secId),ready=s.exercises.filter(function(e){return e.current&&e.current.kg!=null&&e.current.sets&&e.current.reps;});
+  var todo=ready.filter(function(e){return e.touched===d;});
+  if(!ready.length){toast("Enter a weight, sets and reps first");return;}
+  if(!todo.length){if(!confirm("You haven't edited any exercise in "+s.name+" today. Log all "+ready.length+" with their pre-filled numbers?"))return;todo=ready;}
+  var dup=todo.some(function(e){return (e.history||[]).some(function(h){return h.date===d;});});
+  if(!confirm("Log "+todo.length+" exercise"+(todo.length>1?"s":"")+" to "+s.name+" for "+shortDate(d)+"?"+(dup?"\n\nSome are already logged today, so this adds another entry.":""))) return;
+  snapshot();
+  var hits=0;
+  todo.forEach(function(ex){
+    var c=ex.current,t=ex.target||{},hit=isHit(ex),inc=ex.compound?2.5:1.25;
+    var tsets=t.sets||c.sets,treps=t.reps||c.reps,next;
+    if(hit){hits++;next={kg:Math.round((c.kg+inc)*1000)/1000,sets:tsets,reps:treps,note:"auto: hit "+c.sets+"×"+c.reps+" @ "+trim0(c.kg)+" kg → +"+inc+" kg"};}
+    else{var rk=t.kg!=null?t.kg:c.kg;next={kg:rk,sets:tsets,reps:treps,note:"auto: repeat "+tsets+"×"+treps+" @ "+trim0(rk)+" kg (got "+c.sets+"×"+c.reps+" @ "+trim0(c.kg)+")"};}
+    ex.history=ex.history||[];
+    ex.history.push({date:d,session:s.name,weight_kg:c.kg,sets:c.sets,reps:c.reps,completed:hit,note:"logged in app",next_target_kg:next.kg,next_target_note:next.note});
+    ex.target=next;delete ex.touched;
+  });
+  save();render();toast("Logged "+todo.length+" · "+hits+" hit target");
+}
+
+/* ---------- import/export ---------- */
+function exportJSON(){
+  var blob=new Blob([JSON.stringify(state,null,1)],{type:"application/json"}),name="gym-tracker-"+today()+".json";
+  var url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1000);toast("Exported "+name);
+}
+document.getElementById("importFile").addEventListener("change",function(e){
+  var f=e.target.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(){try{var s=JSON.parse(r.result);if(!valid(s))throw new Error("not a gym tracker file");
+    if(!confirm("Replace data on this device with "+f.name+"?"))return;snapshot();state=s;state.unit=state.unit||"kg";save();render();toast("Imported "+f.name);}
+    catch(err){alert("Import failed: "+err.message);}finally{e.target.value="";}};
+  r.readAsText(f);
+});
+
+/* ---------- events ---------- */
+document.addEventListener("click",function(e){
+  var b=e.target.closest("[data-act]");if(!b||body.contains(b))return;
+  var a=b.getAttribute("data-act"),cardEl=b.closest(".card"),id=cardEl&&cardEl.getAttribute("data-id");
+  if(a==="unit"){state.unit=b.getAttribute("data-u");save();render();}
+  else if(a==="toggle"){var s=secById(b.getAttribute("data-sec"));s.collapsed=!s.collapsed;save();render();}
+  else if(a==="target")targetDlg(id);
+  else if(a==="exmenu")exMenu(id);
+  else if(a==="add")addDlg(b.getAttribute("data-sec"));
+  else if(a==="log")logSection(b.getAttribute("data-sec"));
+  else if(a==="menu")menuDlg();
+});
+document.getElementById("app").addEventListener("input",function(e){
+  var el=e.target,f=el.getAttribute("data-f");if(!f)return;var cardEl=el.closest(".card"),ex=findEx(cardEl.getAttribute("data-id")).ex;
+  ex.current=ex.current||{};if(f!=="name"){ex.touched=today();cardEl.classList.add("touched");}
+  if(f==="name"){var n=el.value.trim();if(n)ex.name=n;}
+  else if(f==="kg")ex.current.kg=fromDisp(el.value);
+  else ex.current[f]=intOrNull(el.value);
+  cardEl.classList.toggle("hit",isHit(ex));save();
+});
+document.getElementById("app").addEventListener("change",function(e){if(e.target.getAttribute("data-f")==="name"&&!e.target.value.trim())render();});
+document.getElementById("app").addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.matches("input"))e.target.blur();});
+document.getElementById("app").addEventListener("focusin",function(e){if(e.target.classList.contains("num"))setTimeout(function(){try{e.target.select();}catch(_){}} ,0);});
+
+state=load();state.unit=state.unit||"kg";render();
+window.__gym={get state(){return state;}};
+})();
+</script>
+</body>
+</html>
