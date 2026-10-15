@@ -150,7 +150,7 @@ function toast(msg){var t=document.getElementById("toast");t.textContent=msg;t.c
 var SKEY="esmeGymTracker.sync", OKEY="esmeGymTracker.outbox", syncBusy=false;
 function lsGet(k,d){try{var v=localStorage.getItem(k);return v?JSON.parse(v):d;}catch(e){return d;}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-function syncCfg(){return lsGet(SKEY,{url:"",token:"",enabled:false});}
+function syncCfg(){return lsGet(SKEY,{url:"",token:"gym-esme-RHLBjLwvlOF8UJcWExh02eSj",enabled:false});}
 function outbox(){return lsGet(OKEY,[]);}
 function setOutbox(o){lsSet(OKEY,o);}
 function dayType(sec){var n=sec.name||"";if(sec.id==="ab"||/apollo bay/i.test(n))return "Apollo Bay";if(/^upper/i.test(n))return "Upper";if(/^lower/i.test(n))return "Lower";return n||"Other";}
